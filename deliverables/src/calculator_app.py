@@ -45,6 +45,17 @@ class CalculatorApp(QMainWindow):
         self.setWindowTitle("Professional Calculator")
         self.setFixedSize(400, 600)  # Fixed size, non-resizable
         
+        # Set window properties for better macOS behavior
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowMinimizeButtonHint)
+        
+        # Center window on screen
+        from PyQt6.QtGui import QScreen
+        from PyQt6.QtWidgets import QApplication
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        x = (screen.width() - self.width()) // 2
+        y = (screen.height() - self.height()) // 2
+        self.move(x, y)
+        
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -61,7 +72,12 @@ class CalculatorApp(QMainWindow):
         self.create_button_section(main_layout)
     
     def create_input_section(self, parent_layout):
-        """Create the input display section."""
+        """Create the input and result display sections."""
+        # Expression input section
+        expression_label = QLabel("Expression To Calculate:")
+        expression_label.setFont(QFont("Arial", 12))
+        parent_layout.addWidget(expression_label)
+        
         input_frame = QFrame()
         input_frame.setFrameStyle(QFrame.Shape.StyledPanel)
         input_frame.setLineWidth(1)
@@ -69,31 +85,53 @@ class CalculatorApp(QMainWindow):
         input_layout = QHBoxLayout(input_frame)
         input_layout.setContentsMargins(10, 10, 10, 10)
         
-        # Input field (60 characters wide)
+        # Input field (extended as far as possible)
         self.input_field = QLineEdit()
         self.input_field.setFont(QFont("Monaco", 14))  # Monospace font
         self.input_field.setMaxLength(60)
         self.input_field.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.input_field.setStyleSheet("""
+            QLineEdit {
+                background-color: black;
+                color: white;
+                border: 1px solid #666;
+                padding: 5px;
+            }
+        """)
         self.input_field.textChanged.connect(self.on_input_changed)
         self.input_field.cursorPositionChanged.connect(self.on_cursor_changed)
         
-        # Equals label
-        equals_label = QLabel("=")
-        equals_label.setFont(QFont("Monaco", 14))
-        equals_label.setMinimumWidth(20)
+        input_layout.addWidget(self.input_field, 1)
+        parent_layout.addWidget(input_frame)
         
-        # Result field
+        # Result section
+        result_label = QLabel("Result:")
+        result_label.setFont(QFont("Arial", 12))
+        parent_layout.addWidget(result_label)
+        
+        result_frame = QFrame()
+        result_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        result_frame.setLineWidth(1)
+        
+        result_layout = QHBoxLayout(result_frame)
+        result_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Result field (extended as far as possible)
         self.result_field = QLabel("0")
         self.result_field.setFont(QFont("Monaco", 14))
-        self.result_field.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.result_field.setMinimumWidth(120)
-        self.result_field.setStyleSheet("QLabel { color: #666; }")
+        self.result_field.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.result_field.setMinimumHeight(30)
+        self.result_field.setStyleSheet("""
+            QLabel { 
+                color: white; 
+                background-color: black;
+                padding: 5px;
+                border: 1px solid #666;
+            }
+        """)
         
-        input_layout.addWidget(self.input_field, 1)
-        input_layout.addWidget(equals_label)
-        input_layout.addWidget(self.result_field)
-        
-        parent_layout.addWidget(input_frame)
+        result_layout.addWidget(self.result_field, 1)
+        parent_layout.addWidget(result_frame)
     
     def create_button_section(self, parent_layout):
         """Create the button grid section."""
@@ -101,55 +139,71 @@ class CalculatorApp(QMainWindow):
         button_layout = QGridLayout(button_frame)
         button_layout.setSpacing(5)
         
-        # Button definitions (iPhone calculator style + Save/Recall)
+        # Updated button layout with operators and functions moved down one row
         buttons = [
-            # Row 0: Function buttons
-            ('Clear', 0, 0, 1, 2, 'function'),
-            ('Save', 0, 2, 1, 1, 'function'),
-            ('Recall', 0, 3, 1, 1, 'function'),
+            # Row 0: Empty space
+            ('', 0, 0, 1, 1, 'empty'),     # Empty space
+            ('', 0, 1, 1, 1, 'empty'),     # Empty space
+            ('', 0, 2, 1, 1, 'empty'),     # Empty space
+            ('', 0, 3, 1, 1, 'empty'),     # Empty space
             
-            # Row 1: Operators
-            ('(', 1, 0, 1, 1, 'operator'),
-            (')', 1, 1, 1, 1, 'operator'),
-            ('÷', 1, 2, 1, 1, 'operator'),
-            ('×', 1, 3, 1, 1, 'operator'),
+            # Row 1: Empty space
+            ('', 1, 0, 1, 1, 'empty'),     # Empty space
+            ('', 1, 1, 1, 1, 'empty'),     # Empty space
+            ('', 1, 2, 1, 1, 'empty'),     # Empty space
+            ('', 1, 3, 1, 1, 'empty'),     # Empty space
             
-            # Row 2: Numbers and operators
-            ('7', 2, 0, 1, 1, 'number'),
-            ('8', 2, 1, 1, 1, 'number'),
-            ('9', 2, 2, 1, 1, 'number'),
-            ('-', 2, 3, 1, 1, 'operator'),
+            # Row 2: Function buttons and plus operator
+            ('Clear', 2, 0, 1, 1, 'function'),
+            ('Save', 2, 1, 1, 1, 'function'),
+            ('Recall', 2, 2, 1, 1, 'function'),
+            ('+', 2, 3, 1, 1, 'operator'),  # Plus operator
             
-            # Row 3: Numbers and operators
-            ('4', 3, 0, 1, 1, 'number'),
-            ('5', 3, 1, 1, 1, 'number'),
-            ('6', 3, 2, 1, 1, 'number'),
-            ('+', 3, 3, 1, 1, 'operator'),
+            # Row 3: Numbers start, operators continue
+            ('7', 3, 0, 1, 1, 'number'),
+            ('8', 3, 1, 1, 1, 'number'),
+            ('9', 3, 2, 1, 1, 'number'),
+            ('-', 3, 3, 1, 1, 'operator'),  # Minus operator
             
-            # Row 4: Numbers and operators
-            ('1', 4, 0, 1, 1, 'number'),
-            ('2', 4, 1, 1, 1, 'number'),
-            ('3', 4, 2, 1, 1, 'number'),
-            ('=', 4, 3, 2, 1, 'operator'),  # Spans 2 rows
+            # Row 4: Numbers continue, operators continue
+            ('4', 4, 0, 1, 1, 'number'),
+            ('5', 4, 1, 1, 1, 'number'),
+            ('6', 4, 2, 1, 1, 'number'),
+            ('×', 4, 3, 1, 1, 'operator'),  # Multiply operator
             
-            # Row 5: Zero and decimal
-            ('0', 5, 0, 1, 2, 'number'),  # Spans 2 columns
-            ('.', 5, 2, 1, 1, 'number'),
+            # Row 5: Numbers continue, operators continue
+            ('1', 5, 0, 1, 1, 'number'),
+            ('2', 5, 1, 1, 1, 'number'),
+            ('3', 5, 2, 1, 1, 'number'),
+            ('÷', 5, 3, 1, 1, 'operator'),  # Divide operator
+            
+            # Row 6: New bottom row arrangement
+            ('0', 6, 0, 1, 1, 'number'),   # 0 button - same width as other numbers
+            ('.', 6, 1, 1, 1, 'number'),   # Decimal button next to 0
+            ('(', 6, 2, 1, 1, 'operator'), # Open parenthesis - full width
+            (')', 6, 3, 1, 1, 'operator'), # Close parenthesis - full width
         ]
         
         # Create buttons
         self.buttons = {}
         for button_info in buttons:
             text, row, col, row_span, col_span, button_type = button_info
+            
+            # Skip empty spaces
+            if button_type == 'empty' or text == '':
+                continue
+            
+                
             button = QPushButton(text)
             button.setMinimumHeight(60)
             button.setFont(QFont("Arial", 16))
             
-            # Style buttons by type
+            # Style buttons by type (with black text)
             if button_type == 'number':
                 button.setStyleSheet("""
                     QPushButton {
                         background-color: #f0f0f0;
+                        color: black;
                         border: 1px solid #ccc;
                         border-radius: 8px;
                     }
@@ -164,7 +218,7 @@ class CalculatorApp(QMainWindow):
                 button.setStyleSheet("""
                     QPushButton {
                         background-color: #ff9500;
-                        color: white;
+                        color: black;
                         border: 1px solid #e6860e;
                         border-radius: 8px;
                     }
@@ -179,7 +233,7 @@ class CalculatorApp(QMainWindow):
                 button.setStyleSheet("""
                     QPushButton {
                         background-color: #a6a6a6;
-                        color: white;
+                        color: black;
                         border: 1px solid #8c8c8c;
                         border-radius: 8px;
                     }
@@ -212,9 +266,6 @@ class CalculatorApp(QMainWindow):
             self.save_current_calculation()
         elif button_text == 'Recall':
             self.show_recall_menu()
-        elif button_text == '=':
-            # Do nothing special, result is already showing
-            pass
         else:
             # Handle number/operator input
             char_to_insert = button_text
@@ -251,8 +302,12 @@ class CalculatorApp(QMainWindow):
     
     def on_input_changed(self):
         """Handle input field text changes."""
-        # Trigger calculation with small delay for real-time feedback
-        self.calc_timer.start(100)  # 100ms delay
+        try:
+            # Trigger calculation with small delay for real-time feedback
+            self.calc_timer.start(100)  # 100ms delay
+        except Exception as e:
+            print(f"Error in input change handler: {e}")
+            self.result_field.setText("?")
     
     def on_cursor_changed(self):
         """Handle cursor position changes."""
@@ -260,14 +315,18 @@ class CalculatorApp(QMainWindow):
     
     def update_result(self):
         """Update the result display based on current input."""
-        expression = self.input_field.text().strip()
-        
-        if not expression:
-            self.result_field.setText("0")
-            return
-        
-        result = self.engine.evaluate_expression(expression)
-        self.result_field.setText(str(result))
+        try:
+            expression = self.input_field.text().strip()
+            
+            if not expression:
+                self.result_field.setText("0")
+                return
+            
+            result = self.engine.evaluate_expression(expression)
+            self.result_field.setText(str(result))
+        except Exception as e:
+            print(f"Error updating result: {e}")
+            self.result_field.setText("?")
     
     def reset_calculator(self):
         """Reset calculator to initial state."""
@@ -311,19 +370,23 @@ class CalculatorApp(QMainWindow):
     
     def keyPressEvent(self, event):
         """Handle keyboard input."""
-        key = event.key()
-        text = event.text()
-        
-        # Allow standard editing keys
-        if key in (Qt.Key.Key_Left, Qt.Key.Key_Right, Qt.Key.Key_Home, Qt.Key.Key_End,
-                  Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
-            super().keyPressEvent(event)
-            return
-        
-        # Handle character input
-        if text and self.engine.is_valid_input_character(text):
-            # Let the input field handle it naturally
-            super().keyPressEvent(event)
-        else:
-            # Ignore invalid characters
+        try:
+            key = event.key()
+            text = event.text()
+            
+            # Allow standard editing keys
+            if key in (Qt.Key.Key_Left, Qt.Key.Key_Right, Qt.Key.Key_Home, Qt.Key.Key_End,
+                      Qt.Key.Key_Backspace, Qt.Key.Key_Delete, Qt.Key.Key_Tab):
+                super().keyPressEvent(event)
+                return
+            
+            # Handle character input
+            if text and self.engine.is_valid_input_character(text):
+                # Let the input field handle it naturally
+                super().keyPressEvent(event)
+            else:
+                # Ignore invalid characters
+                event.ignore()
+        except Exception as e:
+            print(f"Error in key press handler: {e}")
             event.ignore()
