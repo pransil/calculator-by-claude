@@ -1,6 +1,6 @@
 # Professional Calculator
 
-A clean, professional desktop calculator application for macOS built with Python and PyQt6. The real purpose of this app is to test a tool that uses claude-code to build apps. That tool can be found in my repo at pransil/claude-coding-automation
+A clean, professional desktop calculator application for macOS built with Python and PyQt6. The real purpose of this app is to test a tool that uses claude-code to build apps. That tool can be found in my repo at pransil/claude-code-automation
 
 ## Features
 
